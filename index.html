@@ -1,215 +1,95 @@
-<!DOCTYPE html><html><head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fungi Booklet 方吉小冊</title>
+<!--
+  這一頁只做一件事：把人送到 app.nature-booklets.cc。
 
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
+  方吉小冊的網站 2026-08 搬到 Cloudflare Pages（原因見 fungibooklet repo 的
+  docs/r2-cdn-migration.md）。舊站留著只為了讓已經流傳出去的連結還能用。
+-->
+<link rel="canonical" href="https://app.nature-booklets.cc/">
+<script>
+  // 舊站（GitHub Pages）→ 新站（Cloudflare Pages）的轉址。
+  //
+  // ★★ 為什麼是用戶端做，不是 301：*.github.io 沒有任何轉址規則可設，也不能把
+  //    Cloudflare 掛在它前面（那是 GitHub 的網域）。所以只能 JS ＋ meta refresh，
+  //    Google 會把「0 秒的 meta refresh」當成軟性 301。代價是 Search Console 的
+  //    「變更網址」工具用不了——那個工具硬性要求真的 301。
+  //
+  // ★★ 舊站的深連結長這樣：/s/<name>。GitHub Pages 沒有 SPA fallback，所以它用
+  //    rafgraph/spa-github-pages 那套：404.html 把 /s/X 編成 /?/s/X 丟回首頁，
+  //    index.html 再還原。兩個入口都要接：
+  //      * 404.html —— 深連結第一手落點，pathname 還是原樣。
+  //      * index.html —— 直接進首頁，**以及**那個 /?/ 編碼形式（瀏覽器可能還
+  //        快取著舊的 404.html；而且舊站 sitemap 裡 3357 筆全是編碼形式）。
+  var l = window.location;
+  var NEW_ORIGIN = 'https://app.nature-booklets.cc';
+  var target = l.pathname + l.search + l.hash;
+  if (l.search && l.search[1] === '/') {
+    // 解碼邏輯照抄舊 index.html 的還原碼，才跟編碼端對得起來。
+    var decoded = l.search.slice(1).split('&').map(function (s) {
+      return s.replace(/~and~/g, '&');
+    }).join('?');
+    target = l.pathname.slice(0, -1) + decoded + l.hash;
+  }
+  var url = NEW_ORIGIN + target;
 
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+  // 讓爬蟲看得到這一頁對應到新站的哪一個網址。
+  try {
+    var c = document.createElement('link');
+    c.rel = 'canonical';
+    c.href = url;
+    document.head.appendChild(c);
+  } catch (e) {}
 
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="/">
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Fungibooket for web">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Fungibooket">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png">
-
-  <title>Fungi Booklet</title>
-  <link rel="manifest" href="manifest.json">
-
-  <link rel="alternate" hreflang="zh-Hant"
-        href="https://twfungi.github.io/" />
-  <link rel="alternate" hreflang="zh-Hans"
-        href="https://twfungi.github.io/" />
-  <link rel="alternate" hreflang="en"
-        href="https://twfungi.github.io/" />
-  <link rel="alternate" hreflang="x-default"
-        href="https://twfungi.github.io/" />
-
-  <style id="splash-screen-style">
-    html {
-      height: 100%
-    }
-
-    body {
-      margin: 0;
-      min-height: 100%;
-      background-color: #6789a3;
-          background-size: 100% 100%;
-    }
-
-    .center {
-      margin: 0;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      -ms-transform: translate(-50%, -50%);
-      transform: translate(-50%, -50%);
-    }
-
-    .contain {
-      display:block;
-      width:100%; height:100%;
-      object-fit: contain;
-    }
-
-    .stretch {
-      display:block;
-      width:100%; height:100%;
-    }
-
-    .cover {
-      display:block;
-      width:100%; height:100%;
-      object-fit: cover;
-    }
-
-    .bottom {
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      -ms-transform: translate(-50%, 0);
-      transform: translate(-50%, 0);
-    }
-
-    .bottomLeft {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-    }
-
-    .bottomRight {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-    }
-  </style>
-  <script id="splash-screen-script">
-    function removeSplashFromWeb() {
-      document.getElementById("splash")?.remove();
-      document.getElementById("splash-branding")?.remove();
-      document.body.style.background = "transparent";
-    }
-  </script>
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
-
-  <!-- Start Single Page Apps for GitHub Pages -->
-  <script type="text/javascript">
-    // Single Page Apps for GitHub Pages
-    // MIT License
-    // https://github.com/rafgraph/spa-github-pages
-    // This script checks to see if a redirect is present in the query string,
-    // converts it back into the correct url and adds it to the
-    // browser's history using window.history.replaceState(...),
-    // which won't cause the browser to attempt to load the new url.
-    // When the single page app is loaded further down in this file,
-    // the correct url will be waiting in the browser's history for
-    // the single page app to route accordingly.
-    (function(l) {
-      if (l.search[1] === '/' ) {
-        var decoded = l.search.slice(1).split('&').map(function(s) {
-          return s.replace(/~and~/g, '&')
-        }).join('?');
-        window.history.replaceState(null, null,
-            l.pathname.slice(0, -1) + decoded + l.hash
-        );
-      }
-    }(window.location))
-  </script>
-  <!-- End Single Page Apps for GitHub Pages -->
-
+  // ★★ 舊站是 Flutter web app，裝過 service worker。它對 index.html 是
+  //    onlineFirst，所以線上的人拿得到這頁；但**新的 index.html 不再載入
+  //    flutter_bootstrap.js，也就不會再呼叫 register()**——那個 SW 會就這樣
+  //    永遠留在使用者的瀏覽器裡，連同幾 MB 的快取。所以這裡自己把它退掉。
+  //
+  // ★ 只有真的有註冊過才等；沒有 SW 的訪客（含爬蟲）直接跳，不要為了清理
+  //   多花任何時間。
+  (function () {
+    function go() { l.replace(url); }
+    if (!('serviceWorker' in navigator)) { go(); return; }
+    Promise.race([navigator.serviceWorker.getRegistrations(), sleep(200).then(function () { return []; })])
+      .then(function (rs) {
+        if (!rs || !rs.length) return;
+        var jobs = rs.map(function (r) { return r.unregister(); });
+        if (window.caches) {
+          jobs.push(caches.keys().then(function (ks) {
+            return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+          }));
+        }
+        return Promise.race([Promise.all(jobs), sleep(400)]);
+      })
+      .catch(function () {})
+      .then(go, go);
+  })();
+</script>
+<!-- 沒有 JS 時的退路。★ 只能送到首頁——這裡是靜態 HTML，接不到路徑。 -->
+<meta http-equiv="refresh" content="0; url=https://app.nature-booklets.cc/">
+<style>
+  body { font: 16px/1.7 system-ui, -apple-system, "Noto Sans TC", sans-serif;
+         margin: 0; padding: 3rem 1.5rem; text-align: center; color: #1c1c20; }
+  a { color: #1d6f42; }
+</style>
 </head>
 <body>
-  <!-- ★★ 站內瀏覽器提示（Facebook／LINE／IG…）
-       ─────────────────────────────────────────────────────────────────────
-       這些 App 點連結是用自己內嵌的 WebView 開的，網址從頭到尾沒有變成交給
-       系統解析的 intent／openURL，所以 **Universal Links／App Links 不會觸發**
-       ——裝了 App 的人照樣被留在網頁裡。這不是我們的設定有問題，是內嵌瀏覽器
-       的行為，站方無法從自己這邊繞過（除非用自訂 scheme，本專案刻意不做）。
+<!--
+  ★ 三種語言全部列出來，不是用 navigator.language 挑一個。
 
-       所以這裡只做一件事：**告訴使用者怎麼跳出去**。跳到系統瀏覽器之後，
-       iOS Safari 會自己依 AASA 顯示「在 Fungi Booklet App 中開啟」的橫幅。
-
-       ★ 寫成純 HTML/JS 放在 Flutter 啟動之前，不是做成 Flutter widget：
-         這批使用者正卡在最需要看到提示的那幾秒（splash 還在轉），等 Flutter
-         boot 完才顯示就太晚了。也因此它不能用 App 的 i18n，語言自己判。
-
-       ★ 選單位置刻意寫得籠統（「角落的 ⋯ 選單」）：FB／LINE 各版本把它放在
-         右上或右下都有，寫死一個位置遲早會變成錯的指示。 -->
-  <div id="iab-hint" hidden>
-    <span id="iab-hint-text"></span>
-    <button type="button" id="iab-hint-close" aria-label="close">✕</button>
-  </div>
-  <style>
-    #iab-hint {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 2147483647;
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 14px; box-sizing: border-box;
-      background: #1b3a2b; color: #f2f7f3;
-      font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-            "Noto Sans TC", sans-serif;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
-    }
-    /* ★★ 這條不能省，而且必須排在 `#iab-hint` 之後。
-       瀏覽器內建樣式表的 `[hidden] { display: none }` 只有 (0,0,1) 的優先權，
-       上面那條 `#iab-hint { display: flex }` 是 (1,0,0)——作者樣式贏，於是
-       `hidden` 屬性完全失效：這條列對每一個訪客都會出現，✕ 也關不掉
-       （handler 做的是 `bar.hidden = true`，而它本來就是 true）。
-       `#iab-hint[hidden]` 是 (1,1,0)，這樣 hidden 才真的管用。 */
-    #iab-hint[hidden] { display: none; }
-    #iab-hint-text { flex: 1; }
-    #iab-hint-close {
-      flex: none; width: 32px; height: 32px; padding: 0;
-      background: transparent; border: 0; border-radius: 16px;
-      color: inherit; font-size: 17px; line-height: 1; cursor: pointer;
-    }
-    #iab-hint-close:active { background: rgba(255, 255, 255, .18); }
-  </style>
-  <script>
-    (function () {
-      var ua = navigator.userAgent || '';
-      // FBAN/FBAV/FB_IAB = Facebook 與 Messenger；Line/ = LINE；
-      // Instagram、Barcelona(Threads) 同屬 Meta 的內嵌瀏覽器。
-      if (!/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona|\bLine\//i.test(ua)) return;
-      try {
-        if (sessionStorage.getItem('iabHintDismissed') === '1') return;
-      } catch (e) { /* 無痕模式存取 sessionStorage 會丟例外，忽略即可 */ }
-
-      var zh = (navigator.language || '').toLowerCase().indexOf('zh') === 0;
-      document.getElementById('iab-hint-text').textContent = zh
-        ? '你正在 App 內建的瀏覽器裡，這種瀏覽器不會啟動「方吉」App。'
-          + '請點畫面角落的 ⋯ 選單 →「在瀏覽器開啟」。'
-        : 'You are in an in-app browser, which cannot open the Fungi Booklet '
-          + 'app. Tap the ⋯ menu and choose “Open in browser”.';
-
-      var bar = document.getElementById('iab-hint');
-      bar.hidden = false;
-      document.getElementById('iab-hint-close').addEventListener('click', function () {
-        bar.hidden = true;
-        try { sessionStorage.setItem('iabHintDismissed', '1'); } catch (e) { /* 同上 */ }
-      });
-    })();
-  </script>
-
-  <picture id="splash">
-      <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
-      <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
-      <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
-  </picture>
-  <script src="flutter_bootstrap.js" async=""></script>
-
-
-</body></html>
+  會看到這段文字的前提是「JS 沒有跑」——而挑語言的程式本身也要 JS。用 JS 挑
+  語言的版本在這裡永遠不會生效，等於自我矛盾的裝飾。三行都印出來難看，但不
+  依賴任何條件。轉址頁的 body 只在一切都失敗時才會被看見，那個時刻要的是可靠。
+-->
+<p lang="zh-Hant"><a href="https://app.nature-booklets.cc/">方吉小冊已搬到 app.nature-booklets.cc</a></p>
+<p lang="zh-Hans"><a href="https://app.nature-booklets.cc/">方吉小册已搬到 app.nature-booklets.cc</a></p>
+<p lang="en"><a href="https://app.nature-booklets.cc/">Fungi Booklet has moved to app.nature-booklets.cc</a></p>
+</body>
+</html>
